@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>3D 交互仪表盘 - 默认比例设置</title>
+    <style>
+        body { margin: 0; background: #111; display: flex; justify-content: center; align-items: center; height: 100vh; font-family: -apple-system, sans-serif; overflow: hidden; }
+        #app { width: 300px; height: 300px; background: #000; border-radius: 20px; position: relative; overflow: hidden; box-shadow: 0 0 40px rgba(0,0,0,0.5); }
+        #gear { position: absolute; top: 15px; right: 15px; cursor: pointer; z-index: 100; font-size: 20px; color: white; transition: 0.2s; }
+        #gear:hover { transform: rotate(90deg); }
+        #settings { position: absolute; top: 0; right: -300px; width: 300px; height: 100%; background: rgba(255, 255, 255, 0.95); padding: 20px; box-sizing: border-box; transition: 0.3s; z-index: 200; overflow-y: auto; }
+        #info { position: absolute; bottom: 25px; width: 100%; text-align: center; pointer-events: none; color: white; }
+        #title { font-size: 18px; font-weight: 800; text-transform: uppercase; }
+        #value { font-size: 14px; font-weight: 500; color: #aaa; margin-top: 2px; }
+        .row { display: flex; gap: 8px; margin-bottom: 10px; align-items: center; }
+        input { border: 1px solid #ddd; border-radius: 4px; padding: 4px; }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+
+<div id="app">
+    <div id="gear">⚙️</div>
+    <div id="settings">
+        <h3>配置项目</h3>
+        <div id="controls"></div>
+        <button onclick="addItem()" style="width:100%; padding:8px; cursor:pointer;">+ 添加新项</button>
+        <button onclick="toggleSettings()" style="width:100%; margin-top:10px; padding:8px; cursor:pointer;">关闭</button>
+    </div>
+    <div id="info">
+        <div id="title">--</div>
+        <div id="value">--</div>
+    </div>
+</div>
+
+<script>
+    // --- 在此处设置默认比例和名称 ---
+    let data = [
+        { name: '销售额', val: 40, color: 0x007AFF },
+        { name: '市场部', val: 30, color: 0xFF3B30 },
+        { name: '技术部', val: 30, color: 0x34C759 }
+    ];
+    // --------------------------------
+
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(40, 1, 1, 1000);
+    camera.position.set(0, 4, 15);
+    camera.lookAt(0, 0, 0);
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setSize(300, 300);
+    document.getElementById('app').appendChild(renderer.domElement);
+
+    let group = new THREE.Group();
+    scene.add(group);
+
+    const rainCount = 800;
+    const rainGeom = new THREE.BufferGeometry();
+    const pos = new Float32Array(rainCount * 3);
+    for(let i=0; i<rainCount; i++) {
+        pos[i*3] = (Math.random()-0.5)*20; pos[i*3+1] = Math.random()*20-10; pos[i*3+2] = (Math.random()-0.5)*20;
+    }
+    rainGeom.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    const rain = new THREE.Points(rainGeom, new THREE.PointsMaterial({ 
+        color: 0xcccccc, size: 0.15, sizeAttenuation: true, transparent: true, opacity: 0.6 
+    }));
+    scene.add(rain);
+
+    function updateScene() {
+        group.clear();
+        let currentAngle = 0;
+        const total = data.reduce((sum, item) => sum + item.val, 0);
+        data.forEach(item => {
+            const angle = (item.val/total)*Math.PI*2;
+            if(angle > 0.05) {
+                const mesh = new THREE.Mesh(new THREE.TorusGeometry(3.5, 0.5, 4, 60, angle-0.05), new THREE.MeshPhongMaterial({ color: item.color, shininess: 100 }));
+                mesh.rotation.x = Math.PI/2; mesh.rotation.z = currentAngle;
+                mesh.userData = { ...item, startAngle: currentAngle, endAngle: currentAngle + angle };
+                group.add(mesh);
+            }
+            currentAngle += angle;
+        });
+        renderControls();
+    }
+
+    function animate() {
+        requestAnimationFrame(animate);
+        group.rotation.y += 0.005;
+        const p = rain.geometry.attributes.position.array;
+        for(let i=0; i<rainCount; i++) {
+            p[i*3+1] -= 0.15;
+            if(p[i*3+1] < -10) p[i*3+1] = 10;
+        }
+        rain.geometry.attributes.position.needsUpdate = true;
+        let rot = (group.rotation.y % (Math.PI*2) + Math.PI*2) % (Math.PI*2);
+        group.children.forEach(mesh => {
+            let center = mesh.userData.startAngle + (mesh.userData.endAngle - mesh.userData.startAngle)/2;
+            if(((center + rot) % (Math.PI*2)) < 0.08 || ((center + rot) % (Math.PI*2)) > 6.20) {
+                document.getElementById('title').innerText = mesh.userData.name;
+                document.getElementById('value').innerText = mesh.userData.val + '%';
+            }
+        });
+        renderer.render(scene, camera);
+    }
+
+    function renderControls() { const div = document.getElementById('controls'); div.innerHTML = ''; data.forEach((item, i) => { div.innerHTML += `<div class="row"><input class="name" value="${item.name}" onchange="data[${i}].name=this.value; updateScene()"><input class="val" type="number" value="${item.val}" onchange="data[${i}].val=parseInt(this.value); updateScene()"><button onclick="data.splice(${i}, 1); updateScene()">×</button></div>`; }); }
+    function addItem() { data.push({ name: '新项目', val: 10, color: Math.random()*0xffffff }); updateScene(); }
+    function toggleSettings() { const s = document.getElementById('settings'); s.style.right = s.style.right === '0px' ? '-300px' : '0px'; }
+    document.getElementById('gear').onclick = toggleSettings;
+    
+    scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+    const pLight = new THREE.PointLight(0xffffff, 1.5); pLight.position.set(5, 10, 5); scene.add(pLight);
+    updateScene();
+    animate();
+</script>
+</body>
+</html>
