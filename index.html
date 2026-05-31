@@ -7,15 +7,15 @@
         body { margin: 0; background: transparent; display: flex; justify-content: center; align-items: center; height: 100vh; font-family: -apple-system, sans-serif; overflow: hidden; }
         #app { width: 300px; height: 300px; background: transparent; position: relative; overflow: hidden; }
         
-        #gear { position: absolute; top: 15px; right: 15px; cursor: pointer; z-index: 100; font-size: 20px; color: #333; transition: 0.2s; text-shadow: 0 0 5px rgba(255,255,255,0.8); }
+        #gear { position: absolute; top: 15px; right: 15px; cursor: pointer; z-index: 100; font-size: 20px; color: #333; transition: 0.2s; }
         #gear:hover { transform: rotate(90deg); }
         
         #settings { position: absolute; top: 0; right: -300px; width: 300px; height: 100%; background: rgba(255, 255, 255, 0.95); padding: 20px; box-sizing: border-box; transition: 0.3s; z-index: 200; overflow-y: auto; color: #333; }
         
-        /* 核心优化：增强文字阴影，防止白色背景干扰 */
-        #info { position: absolute; bottom: 25px; width: 100%; text-align: center; pointer-events: none; }
-        #title { font-size: 18px; font-weight: 800; text-transform: uppercase; color: #333; text-shadow: 0 0 8px rgba(255,255,255,0.8), 0 1px 2px rgba(0,0,0,0.2); }
-        #value { font-size: 14px; font-weight: 600; color: #555; margin-top: 2px; text-shadow: 0 0 5px rgba(255,255,255,0.8), 0 1px 1px rgba(0,0,0,0.1); }
+        /* 核心优化：增加清晰投影，移除发光效果 */
+        #info { position: absolute; bottom: 25px; width: 100%; text-align: center; pointer-events: none; display: flex; justify-content: center; gap: 10px; }
+        #title { font-size: 18px; font-weight: 800; color: #fff; text-shadow: 1px 1px 2px rgba(0,0,0,0.8); }
+        #value { font-size: 18px; font-weight: 800; color: #fff; text-shadow: 1px 1px 2px rgba(0,0,0,0.8); }
 
         .row { display: flex; gap: 8px; margin-bottom: 10px; align-items: center; }
         input { border: 1px solid #ccc; border-radius: 4px; padding: 4px; }
@@ -40,7 +40,7 @@
 
 <script>
     let data = [
-        { name: '销售额', val: 40, color: 0x007AFF },
+        { name: '销售部', val: 40, color: 0x007AFF },
         { name: '市场部', val: 30, color: 0xFF3B30 },
         { name: '技术部', val: 30, color: 0x34C759 }
     ];
